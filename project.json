@@ -1,0 +1,4 @@
+{
+    "game": ["MaiMaiFramework.lua","test.lua","CreateMonster.lua"], 
+    "ui": ["MaiMaiFramework.lua","Draw.lua","test.lua","ui.lua"]
+}
