@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MaiMaiFramework · CSOL 缔造者 Lua 框架</title>
+<meta name="description" content="MaiMaiFramework 是基于事件的隐式调用 CSOL 缔造者框架，让不会 Lua 的地图作者也能轻松使用、扩展和移植脚本。" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230b0b14'/%3E%3Cpath d='M20 70 L35 30 L50 58 L65 30 L80 70' stroke='%23ff3d8b' stroke-width='9' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --bg:#07070d;
+    --bg-soft:#0d0d18;
+    --panel:#11111d;
+    --line:rgba(255,255,255,.09);
+    --line-strong:rgba(255,255,255,.16);
+    --text:#eceaf5;
+    --muted:#9b98b3;
+    --pink:#ff3d8b;
+    --cyan:#3de1ff;
+    --violet:#8b6cff;
+    --green:#4ef0a8;
+    --radius:18px;
+    --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --sans:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(900px 600px at 12% -10%, rgba(255,61,139,.16), transparent 60%),
+      radial-gradient(800px 520px at 92% 4%, rgba(61,225,255,.10), transparent 60%),
+      radial-gradient(900px 700px at 50% 110%, rgba(139,108,255,.10), transparent 60%);
+  }
+  body::after{
+    content:"";
+    position:fixed;inset:0;z-index:-1;
+    background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+    background-size:64px 64px;
+    mask-image:radial-gradient(ellipse 90% 65% at 50% 0%,#000 40%,transparent 100%);
+    -webkit-mask-image:radial-gradient(ellipse 90% 65% at 50% 0%,#000 40%,transparent 100%);
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{width:min(1160px,calc(100% - 48px));margin:0 auto}
+
+  /* ---------- nav ---------- */
+  header{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    background:rgba(7,7,13,.72);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:.2px}
+  .brand svg{width:30px;height:30px;flex:none}
+  .brand span b{color:var(--pink)}
+  .nav-links{display:flex;gap:28px;font-size:14px;color:var(--muted)}
+  .nav-links a{transition:color .2s ease}
+  .nav-links a:hover{color:var(--text)}
+  .nav-cta{
+    font-size:13.5px;font-weight:600;
+    padding:9px 18px;border-radius:999px;
+    border:1px solid var(--line-strong);
+    background:rgba(255,255,255,.03);
+    transition:.2s ease;
+  }
+  .nav-cta:hover{border-color:var(--pink);box-shadow:0 0 24px rgba(255,61,139,.28);transform:translateY(-1px)}
+
+  /* ---------- hero ---------- */
+  .hero{padding:96px 0 72px;position:relative}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:center}
+  .badge{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:12.5px;letter-spacing:.4px;color:#ffd0e2;
+    border:1px solid rgba(255,61,139,.35);
+    background:rgba(255,61,139,.08);
+    padding:6px 14px;border-radius:999px;margin-bottom:26px;
+  }
+  .badge i{width:6px;height:6px;border-radius:50%;background:var(--pink);box-shadow:0 0 12px var(--pink);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  h1{
+    font-size:clamp(42px,5.4vw,68px);
+    line-height:1.06;letter-spacing:-2px;font-weight:800;
+  }
+  h1 .grad{
+    background:linear-gradient(100deg,var(--pink) 0%,var(--violet) 55%,var(--cyan) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p.lead{margin-top:24px;font-size:17px;color:var(--muted);max-width:30em}
+  .hero-actions{display:flex;gap:14px;margin-top:36px;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    padding:13px 26px;border-radius:12px;font-size:15px;font-weight:600;
+    transition:.22s ease;
+  }
+  .btn-primary{
+    background:linear-gradient(120deg,var(--pink),#c026d3);
+    color:#fff;box-shadow:0 10px 34px rgba(255,61,139,.32);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(255,61,139,.45)}
+  .btn-ghost{border:1px solid var(--line-strong);color:var(--text);background:rgba(255,255,255,.02)}
+  .btn-ghost:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px)}
+
+  .terminal{
+    border:1px solid var(--line-strong);border-radius:16px;
+    background:linear-gradient(180deg,rgba(20,20,34,.96),rgba(10,10,18,.96));
+    box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.02) inset;
+    overflow:hidden;
+  }
+  .terminal-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+  .terminal-title{margin-left:10px;font-size:12px;color:#6f6c85;font-family:var(--mono)}
+  .terminal pre{
+    padding:22px 20px;font-family:var(--mono);font-size:13px;line-height:1.9;
+    overflow-x:auto;color:#c9c6dc;
+  }
+  .tok-k{color:#ff7ab5}.tok-s{color:#8be9c3}.tok-c{color:#5d5a75}.tok-f{color:#7fd6ff}.tok-p{color:#c3a6ff}
+
+  /* ---------- stats ---------- */
+  .stats{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--line);border-radius:var(--radius);
+    background:rgba(255,255,255,.02);overflow:hidden;
+  }
+  .stat{padding:26px 28px;border-right:1px solid var(--line)}
+  .stat:last-child{border-right:0}
+  .stat b{display:block;font-size:30px;font-weight:800;letter-spacing:-1px;
+    background:linear-gradient(120deg,#fff 20%,#ffb3d2 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat span{font-size:13px;color:var(--muted)}
+
+  /* ---------- section base ---------- */
+  section{padding:88px 0}
+  .sec-head{max-width:660px;margin-bottom:48px}
+  .kicker{
+    font-family:var(--mono);font-size:12px;letter-spacing:2.5px;text-transform:uppercase;
+    color:var(--pink);margin-bottom:14px;display:flex;align-items:center;gap:10px;
+  }
+  .kicker::before{content:"";width:26px;height:1px;background:var(--pink)}
+  h2{font-size:clamp(28px,3.4vw,40px);line-height:1.18;letter-spacing:-1px;font-weight:800}
+  .sec-head p{margin-top:14px;color:var(--muted);font-size:15.5px}
+
+  /* ---------- features ---------- */
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{
+    position:relative;padding:30px 26px 28px;border-radius:16px;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));
+    transition:.25s ease;overflow:hidden;
+  }
+  .card::after{
+    content:"";position:absolute;inset:0;opacity:0;transition:opacity .25s ease;
+    background:radial-gradient(420px 220px at var(--mx,50%) var(--my,0%),rgba(255,61,139,.14),transparent 70%);
+    pointer-events:none;
+  }
+  .card:hover{transform:translateY(-4px);border-color:rgba(255,61,139,.34);box-shadow:0 20px 50px rgba(0,0,0,.42)}
+  .card:hover::after{opacity:1}
+  .card .ico{
+    width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+    background:rgba(255,61,139,.1);border:1px solid rgba(255,61,139,.25);
+    margin-bottom:20px;font-size:19px;
+  }
+  .card h3{font-size:17px;margin-bottom:9px;letter-spacing:-.2px}
+  .card p{font-size:14px;color:var(--muted);line-height:1.7}
+
+  /* ---------- steps ---------- */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:42px}
+  .step{padding:26px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.022)}
+  .step .num{
+    font-family:var(--mono);font-size:12px;color:var(--cyan);
+    border:1px solid rgba(61,225,255,.3);background:rgba(61,225,255,.07);
+    display:inline-block;padding:2px 10px;border-radius:999px;margin-bottom:16px;
+  }
+  .step h4{font-size:16px;margin-bottom:8px}
+  .step p{font-size:13.5px;color:var(--muted)}
+
+  .code-panel{
+    border:1px solid var(--line-strong);border-radius:16px;overflow:hidden;
+    background:#0b0b15;box-shadow:0 24px 70px rgba(0,0,0,.45);
+  }
+  .code-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.025);
+  }
+  .code-head .name{font-family:var(--mono);font-size:12.5px;color:#8b88a3}
+  .code-head .tag{font-size:11px;color:var(--cyan);font-family:var(--mono);letter-spacing:.6px}
+  .code-panel pre{
+    padding:22px 20px;font-family:var(--mono);font-size:13px;line-height:1.9;
+    overflow-x:auto;color:#c9c6dc;
+  }
+  .code-split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+
+  /* ---------- plugin ---------- */
+  .plugin-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:44px;align-items:start}
+  .bullets{list-style:none;display:grid;gap:18px;margin-top:8px}
+  .bullets li{display:flex;gap:14px;font-size:14.5px;color:var(--muted)}
+  .bullets li b{color:var(--text);font-weight:600}
+  .check{
+    flex:none;width:22px;height:22px;border-radius:50%;
+    background:rgba(78,240,168,.1);border:1px solid rgba(78,240,168,.35);
+    color:var(--green);display:grid;place-items:center;font-size:12px;margin-top:2px;
+  }
+
+  /* ---------- api ---------- */
+  .api-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .api-box{border:1px solid var(--line);border-radius:16px;padding:28px;background:rgba(255,255,255,.022)}
+  .api-box h3{display:flex;align-items:center;gap:10px;font-size:15px;margin-bottom:18px}
+  .api-box h3 .pill{font-size:11px;font-family:var(--mono);padding:3px 9px;border-radius:6px}
+  .pill.game{background:rgba(255,61,139,.12);color:#ff8cba;border:1px solid rgba(255,61,139,.3)}
+  .pill.ui{background:rgba(61,225,255,.1);color:#6fe6ff;border:1px solid rgba(61,225,255,.3)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    font-family:var(--mono);font-size:12.2px;
+    padding:5px 11px;border-radius:8px;
+    border:1px solid var(--line);background:rgba(255,255,255,.03);color:#b9b6cc;
+    transition:.18s ease;
+  }
+  .chip:hover{border-color:var(--line-strong);color:#fff;transform:translateY(-1px)}
+
+  .note{
+    margin-top:26px;display:flex;gap:14px;align-items:flex-start;
+    padding:20px 22px;border-radius:14px;
+    border:1px solid rgba(254,188,46,.28);background:rgba(254,188,46,.06);
+    font-size:14px;color:#e8d8b0;
+  }
+  .note b{color:#febc2e}
+
+  /* ---------- cta ---------- */
+  .cta{
+    text-align:center;padding:78px 32px;border-radius:26px;
+    border:1px solid rgba(255,61,139,.3);
+    background:
+      radial-gradient(700px 320px at 50% -30%,rgba(255,61,139,.22),transparent 70%),
+      linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+  }
+  .cta h2{margin-bottom:14px}
+  .cta p{color:var(--muted);max-width:34em;margin:0 auto 32px}
+  .cta .hero-actions{justify-content:center}
+
+  footer{border-top:1px solid var(--line);padding:38px 0 44px;margin-top:88px}
+  .foot{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+  .foot a:hover{color:var(--pink)}
+  .foot .dotsep{margin:0 10px;opacity:.35}
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  @media (max-width:980px){
+    .hero-grid{grid-template-columns:1fr;gap:44px}
+    .features,.steps{grid-template-columns:1fr 1fr}
+    .stats{grid-template-columns:1fr 1fr}
+    .stat:nth-child(2){border-right:0}
+    .stat:nth-child(1),.stat:nth-child(2){border-bottom:1px solid var(--line)}
+    .plugin-grid,.code-split,.api-cols{grid-template-columns:1fr}
+    .nav-links{display:none}
+  }
+  @media (max-width:600px){
+    .features,.steps{grid-template-columns:1fr}
+    .stats{grid-template-columns:1fr}
+    .stat{border-right:0;border-bottom:1px solid var(--line)}
+    .stat:last-child{border-bottom:0}
+    section{padding:64px 0}
+    .hero{padding:64px 0 48px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="MaiMaiFramework 首页">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <rect width="100" height="100" rx="24" fill="#11111d" stroke="rgba(255,255,255,.12)"/>
+        <path d="M22 70 L36 30 L50 58 L64 30 L78 70" stroke="#ff3d8b" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>MaiMai<b>Framework</b></span>
+    </a>
+    <nav class="nav-links">
+      <a href="#features">特性</a>
+      <a href="#start">快速开始</a>
+      <a href="#plugin">插件开发</a>
+      <a href="#api">API</a>
+    </nav>
+    <a class="nav-cta" href="#start">开始使用</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="badge"><i></i>CSOL 缔造者 · Lua 框架</div>
+        <h1>把脚本变成<br/><span class="grad">可组合的插件</span></h1>
+        <p class="lead">MaiMaiFramework 是基于事件的隐式调用框架。让不会写 Lua 的地图作者也能轻松使用、扩展、移植他人的脚本，在作者与脚本编写者之间架起一座桥。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#start">快速开始 →</a>
+          <a class="btn btn-ghost" href="#api">浏览 API</a>
+        </div>
+      </div>
+      <div class="terminal" aria-hidden="true">
+        <div class="terminal-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="terminal-title">project.json</span>
+        </div>
+        <pre><code><span class="tok-c">// 只需在工程目录声明插件</span>
+{
+  <span class="tok-k">"game"</span>: [<span class="tok-s">"MaiMaiFramework.lua"</span>],
+  <span class="tok-k">"ui"</span>:   [<span class="tok-s">"MaiMaiFramework.lua"</span>]
+}
+
+<span class="tok-c">// 有插件时追加即可，无需改动框架</span>
+{
+  <span class="tok-k">"game"</span>: [<span class="tok-s">"MaiMaiFramework.lua"</span>, <span class="tok-s">"MyPlug.lua"</span>],
+  <span class="tok-k">"ui"</span>:   [<span class="tok-s">"MaiMaiFramework.lua"</span>, <span class="tok-s">"MyPlug.lua"</span>]
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="wrap reveal">
+    <div class="stats">
+      <div class="stat"><b>30+</b><span>Game 端事件钩子</span></div>
+      <div class="stat"><b>12</b><span>UI 端事件钩子</span></div>
+      <div class="stat"><b>2</b><span>Game / UI 双端统一</span></div>
+      <div class="stat"><b>0</b><span>地图改动即可接入</span></div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="kicker">Features</div>
+        <h2>为什么选择 MaiMaiFramework</h2>
+        <p>把散落的脚本收敛为一套约定：注册即生效，事件自动分发，插件之间互不侵入。</p>
+      </div>
+      <div class="features">
+        <article class="card reveal">
+          <div class="ico">⚡</div>
+          <h3>事件驱动的隐式调用</h3>
+          <p>框架统一监听官方事件，你只需把方法注册到对应钩子，调用时机由框架负责，无需自己串联生命周期。</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">🧩</div>
+          <h3>插件化注册</h3>
+          <p>脚本以插件形式静态或动态载入，通过 Register / UnRegister 管理订阅，模块边界清晰。</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">🖥️</div>
+          <h3>Game 与 UI 双端统一</h3>
+          <p>同一套插件写法同时覆盖服务端 Game 与客户端 UI，减少重复代码与跨端沟通成本。</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">🔌</div>
+          <h3>零侵入接入</h3>
+          <p>只需在 <code>project.json</code> 中添加文件名，不必修改框架源码或游戏地图逻辑。</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">📦</div>
+          <h3>可移植的脚本资产</h3>
+          <p>遵循约定编写的插件可以在不同地图、不同作者之间直接复用，移植不再是重写。</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">🧠</div>
+          <h3>面向非程序作者</h3>
+          <p>下载即用的框架文件加简短配置，让地图作者无需理解 Lua 细节也能装配完整玩法。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICK START -->
+  <section id="start">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="kicker">Quick Start</div>
+        <h2>三步接入现有工程</h2>
+        <p>框架只能在 CSOL 缔造者游戏模式环境下运行。准备好文件后，在游戏模式中测试效果即可。</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="num">STEP 01</div>
+          <h4>下载框架文件</h4>
+          <p>获取 main 分支的 MaiMaiFramework.lua，放入 <code>project.json</code> 同目录。</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">STEP 02</div>
+          <h4>修改 project.json</h4>
+          <p>在 game 与 ui 数组中声明框架文件；有插件时按顺序追加文件名。</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">STEP 03</div>
+          <h4>进入游戏模式验证</h4>
+          <p>在 CSOL 缔造者中测试脚本效果，通过聊天框信号即可触发插件逻辑。</p>
+        </div>
+      </div>
+
+      <div class="code-split">
+        <div class="code-panel reveal">
+          <div class="code-head"><span class="name">project.json</span><span class="tag">仅框架</span></div>
+          <pre><code>{
+  <span class="tok-k">"game"</span>: [<span class="tok-s">"MaiMaiFramework.lua"</span>],
+  <span class="tok-k">"ui"</span>:   [<span class="tok-s">"MaiMaiFramework.lua"</span>]
+}</code></pre>
+        </div>
+        <div class="code-panel reveal">
+          <div class="code-head"><span class="name">project.json</span><span class="tag">+ 插件</span></div>
+          <pre><code>{
+  <span class="tok-k">"game"</span>: [<span class="tok-s">"MaiMaiFramework.lua"</span>, <span class="tok-s">"AddHealthPlug.lua"</span>],
+  <span class="tok-k">"ui"</span>:   [<span class="tok-s">"MaiMaiFramework.lua"</span>, <span class="tok-s">"AddHealthPlug.lua"</span>]
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLUGIN -->
+  <section id="plugin">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="kicker">Plugin Development</div>
+        <h2>写一个插件，只需要注册</h2>
+        <p>把方法挂到框架提供的钩子上，剩下的交给框架。聊天框输入「增加生命值100」，即可为玩家提升生命值。</p>
+      </div>
+      <div class="plugin-grid">
+        <div class="reveal">
+          <ul class="bullets">
+            <li><span class="check">✓</span><span><b>区分运行环境</b>：用 Game / UI 变量判断当前执行端，同一文件可双端运行。</span></li>
+            <li><span class="check">✓</span><span><b>注册到钩子</b>：Framework 暴露 GamePlug 与 UIPlug，按需 Register。</span></li>
+            <li><span class="check">✓</span><span><b>无需框架改动</b>：插件独立成文件，随工程一起加载。</span></li>
+            <li><span class="check">✓</span><span><b>随时解绑</b>：调用 UnRegister 移除订阅，避免重复触发。</span></li>
+          </ul>
+        </div>
+        <div class="code-panel reveal">
+          <div class="code-head"><span class="name">AddHealthPlug.lua</span><span class="tag">Lua</span></div>
+          <pre><code><span class="tok-c">-- 编写插件</span>
+<span class="tok-k">if</span> Game <span class="tok-k">then</span>
+  <span class="tok-k">function</span> <span class="tok-f">MyGameFunc</span>(player, msg)
+    <span class="tok-k">if</span> <span class="tok-f">string.find</span>(msg, <span class="tok-s">"增加生命值"</span>) <span class="tok-k">then</span>
+      <span class="tok-k">local</span> value = <span class="tok-f">string.gsub</span>(msg, <span class="tok-s">"增加生命值"</span>, <span class="tok-s">""</span>)
+      player.health = player.health + <span class="tok-f">tonumber</span>(value)
+    <span class="tok-k">end</span>
+  <span class="tok-k">end</span>
+<span class="tok-k">end</span>
+
+<span class="tok-k">if</span> UI <span class="tok-k">then</span>
+  <span class="tok-k">function</span> <span class="tok-f">MyUIFunc</span>(msg)
+    UI.<span class="tok-f">SignalPlus</span>(msg)
+  <span class="tok-k">end</span>
+<span class="tok-k">end</span>
+
+<span class="tok-c">-- 注册方法到框架中</span>
+<span class="tok-k">if</span> Game <span class="tok-k">then</span>
+  Framework.GamePlug.OnPlayerSignalPlus:<span class="tok-f">Register</span>(MyGameFunc)
+<span class="tok-k">end</span>
+<span class="tok-k">if</span> UI <span class="tok-k">then</span>
+  Framework.UIPlug.OnChat:<span class="tok-f">Register</span>(MyUIFunc)
+<span class="tok-k">end</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- API -->
+  <section id="api">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="kicker">API Reference</div>
+        <h2>可注册的事件钩子</h2>
+        <p>框架在官方事件之上补充了扩展方法，例如在 OnUpdate 下一帧执行的 OnLaterUpdate。</p>
+      </div>
+      <div class="api-cols">
+        <div class="api-box reveal">
+          <h3>服务端 <span class="pill game">Game</span></h3>
+          <div class="chips">
+            <span class="chip">OnKilled</span>
+            <span class="chip">OnRoundStart</span>
+            <span class="chip">OnRoundStartFinished</span>
+            <span class="chip">OnPlayerJoiningSpawn</span>
+            <span class="chip">OnPlayerSignal</span>
+            <span class="chip">OnTakeDamage</span>
+            <span class="chip">OnPlayerKilled</span>
+            <span class="chip">OnPlayerSpawn</span>
+            <span class="chip">OnPlayerConnect</span>
+            <span class="chip">OnPlayerDisconnect</span>
+            <span class="chip">OnGetWeapon</span>
+            <span class="chip">OnGameSave</span>
+            <span class="chip">OnLoadGameSave</span>
+            <span class="chip">OnClearGameSave</span>
+            <span class="chip">OnReload</span>
+            <span class="chip">OnReloadFinished</span>
+            <span class="chip">OnSwitchWeapon</span>
+            <span class="chip">PostFireWeapon</span>
+            <span class="chip">CanBuyWeapon</span>
+            <span class="chip">CanHaveWeaponInHand</span>
+            <span class="chip">OnUpdate</span>
+            <span class="chip">OnPlayerUpdate</span>
+            <span class="chip">OnPlayerLaterUpdate</span>
+            <span class="chip">OnPlayerSignalPlus</span>
+            <span class="chip">OnLaterUpdate</span>
+          </div>
+        </div>
+        <div class="api-box reveal">
+          <h3>客户端 <span class="pill ui">UI</span></h3>
+          <div class="chips">
+            <span class="chip">OnRoundStart</span>
+            <span class="chip">OnSpawn</span>
+            <span class="chip">OnKilled</span>
+            <span class="chip">OnChat</span>
+            <span class="chip">OnInput</span>
+            <span class="chip">OnKeyDown</span>
+            <span class="chip">OnKeyUp</span>
+            <span class="chip">OnSignal</span>
+            <span class="chip">OnUpdate</span>
+            <span class="chip">OnLaterUpdate</span>
+            <span class="chip">OnSignalPlus</span>
+          </div>
+          <div class="note">
+            <span>⚠</span>
+            <div><b>已知问题：</b>同一个游戏 Lua 脚本中，<code>Signal</code> 与 <code>SignalPlus</code> 不能混用；Game 端与 UI 端同理。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="cta reveal">
+        <h2>让你的地图脚本真正可复用</h2>
+        <p>下载框架文件，按约定编写插件，即可在 CSOL 缔造者中快速装配玩法。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://gitee.com/UmaruIsBoy/MaiMaiFramework.lua" target="_blank" rel="noopener">前往 Gitee 仓库</a>
+          <a class="btn btn-ghost" href="https://gitee.com/UmaruIsBoy/MaiMaiFramework.lua/wikis/Home" target="_blank" rel="noopener">阅读详细文档</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div>© 2026 MaiMaiFramework · 基于 MIT License 开源</div>
+    <div>
+      <a href="https://gitee.com/UmaruIsBoy/MaiMaiFramework.lua" target="_blank" rel="noopener">Gitee</a>
+      <span class="dotsep">·</span>
+      <span>交流群 691763332</span>
+      <span class="dotsep">·</span>
+      <a href="#top">回到顶部</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12 });
+    els.forEach(function (el) { io.observe(el); });
+
+    document.querySelectorAll('.card').forEach(function (card) {
+      card.addEventListener('pointermove', function (ev) {
+        var r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', (ev.clientX - r.left) + 'px');
+        card.style.setProperty('--my', (ev.clientY - r.top) + 'px');
+      });
+    });
+  })();
+</script>
+</body>
+</html>
